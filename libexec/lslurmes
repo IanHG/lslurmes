@@ -1,0 +1,37 @@
+-- Load globally installed packages
+local argparse = assert(require "argparse")
+
+-- Load local packages
+local exception  = assert(require "lib.exception")
+local logging    = assert(require "lib.logging")
+local logger     = logging.logger
+local ansicolor  = assert(require "lib.ansicolor")
+local batchwriter = assert(require "lib.batchwriter")
+
+--- Main driver.
+function main()
+   -- Arg parser
+   local parser = argparse()
+   
+   exception.try(function()
+      local bw = batchwriter.create()
+      
+      bw:add_command("echo \"hello\"")
+
+      bw:write()
+
+   end, function(e)
+      -- Print exception
+      exception.message(e)
+         
+      -- Print usage
+      print("\n" .. parser:get_usage())
+
+      -- Exit with non zero status
+      os.exit(1)
+   end)
+end
+
+--[[
+# vi:syntax=lua
+--]]
