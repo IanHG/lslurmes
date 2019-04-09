@@ -53,7 +53,7 @@ function symbol_table_class:add_symbol(symb, ssymb, overwrite, format_fcn)
       logger:alert("Cannot add : Symbol is empty.")
       assert(false)
    end
-   if not (type(ssymb) == "string") then
+   if (not (type(ssymb) == "string") and not (type(ssymb) == "function")) then
       ssymb = tostring(ssymb)
    end
 
@@ -98,9 +98,15 @@ function symbol_table_class:substitute(str)
          -- loop over symbols
          for k, v in pairs(self.symbols) do
             if str:match(self:escape(k)) then
-               local formatet_ssymb = v.ssymb
+               local ssymb
+               if type(v.ssymb) == "function" then
+                  ssymb = v.ssymb()
+               else
+                  ssymb = v.ssymb
+               end
+               local formatet_ssymb = ssymb
                
-               if v.ssymb:match(pattern) then
+               if ssymb:match(pattern) then
                   formatet_ssymb = substitute_impl(formatet_ssymb)
                end
 
@@ -160,7 +166,11 @@ end
 function symbol_table_class:print()
    logger:message("   Symbol table : ")
    for k, v in pairs(self.symbols) do
-      logger:message("      " .. k .. " : " .. v.ssymb)
+      if type(v.ssymb) == "function" then
+         logger:message("      " .. k .. " : " .. v.ssymb())
+      else
+         logger:message("      " .. k .. " : " .. v.ssymb)
+      end
    end
 end
 

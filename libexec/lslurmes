@@ -1,5 +1,5 @@
 -- Load globally installed packages
-local argparse = assert(require "argparse")
+local argparse = assert(require "lib.argparse")
 
 -- Load local packages
 local exception  = assert(require "lib.exception")
@@ -7,19 +7,42 @@ local logging    = assert(require "lib.logging")
 local logger     = logging.logger
 local ansicolor  = assert(require "lib.ansicolor")
 local batchwriter = assert(require "lib.batchwriter")
+local symbtab    = assert(require "lib.symbtab")
+local execcmd    = assert(require "lib.execcmd")
 
 --- Main driver.
-function main()
-   -- Arg parser
-   local parser = argparse()
-   
+--
+--
+function main(pack)
    exception.try(function()
-      local bw = batchwriter.create()
+      -- Arg parser
+      local parser = argparse.create()
+      local bw     = batchwriter.create()
+
+      local lslurmes_parser = argparse.create_lslurmes_parser(parser)
+      local lslurmes_writer = batchwriter.create_lslurmes_writer(bw)
       
-      bw:add_command("echo \"hello\"")
+      -- Run pack
+      pack(lslurmes_parser:get(), lslurmes_writer:get())
+      
+      -- Parse arguments
+      local args = parser:parse()
 
-      bw:write()
+      -- Setup symbol table
 
+      symbtable = symbtab.create()
+      
+      for k,v in pairs(args) do
+         symbtable:add_symbol(k, v)
+      end
+      
+      -- Write batchfile
+      bw:write(symbtable)
+      
+      -- 
+      if not args.dry then
+         execcmd.execcmd("sbatch submit.sh")
+      end
    end, function(e)
       -- Print exception
       exception.message(e)

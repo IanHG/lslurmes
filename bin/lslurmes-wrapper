@@ -22,8 +22,35 @@ if folder_of_this:sub(1,1) ~= "/" then
 end
 package.path = folder_of_this .. '../?.lua;' .. package.path -- Set package path
 
+--
+local luautil = assert(require "lib.luautil")
+local function dofile_into_environment(filename, env)
+   function readall(file)
+      local f = assert(io.open(file, "rb"))
+      local content = f:read("*all")
+      f:close()
+      return content
+   end
+
+   setmetatable ( env, { __index = _G } )
+   local status = nil
+   local result = nil
+   if luautil.version() == "Lua 5.1" then
+      status, result = assert(pcall(setfenv(assert(loadfile(filename)), env)))
+   else
+      local content  = readall(filename)
+      status, result = assert(pcall(load(content, nil, nil, env)))
+   end
+   setmetatable(env, nil)
+   return result
+end
+
 -- Load actual script from libexec
-assert(loadfile(folder_of_this .. "../libexec/" ..arg[1]))()
+local lslurmes_main = "lslurmes"
+assert(loadfile(folder_of_this .. "../libexec/" .. lslurmes_main))()
+local fname = string.gsub(arg[1], "-", "_")
+local env   = {}
+local file  = dofile_into_environment(folder_of_this .. "../libexec/" ..arg[1], env)
 
 -- Clean argv by first shifting all args one position, then removing last element.
 for i = 0, #arg - 1 do
@@ -32,7 +59,7 @@ end
 local head = table.remove(arg, #arg)
 
 -- Run main function loaded from libexec
-main()
+main(env[fname])
 
 --[[
 # vi:syntax=lua

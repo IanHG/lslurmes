@@ -1,0 +1,29 @@
+--- Submit R calculation
+--
+--
+function submit_R(parser, writer)
+   -- Define parser
+   parser
+      -- Add input file
+      .add_argument("input_file", "R input file.")
+   
+   -- Define writer
+   writer
+      -- Copy input files to node
+      .copy_file("%input_file%")  
+      -- Run R
+      .add_command("ml R")
+      .add_command("R CMD BATCH %input_file%")
+      -- Copy back results
+      .copy_file_back("*")
+end
+
+--local M = {}
+--
+--M.submit_R = submit_R
+--
+--return M
+
+--[[
+# vi:syntax=lua
+--]]

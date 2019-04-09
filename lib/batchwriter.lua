@@ -1,5 +1,7 @@
 local class   = assert(require "lib.class")
 local symbtab = assert(require "lib.symbtab")
+local ftable  = assert(require "lib.ftable")
+local path    = assert(require "lib.path")
 
 local batchwriter_class = class.create_class()
 
@@ -14,14 +16,16 @@ function batchwriter_class:__init()
    self.header = {
       "-J                %jobname%           # Job name (you can try to change it).",
       "--partition       %partition%         # Which partition to use.",
-      "--time            %timelimit%         # Time limit.",
+      "--time            %time%              # Time limit.",
       "--nodes           %nodes%             # The number of nodes to allocate.",
-      "--ntasks-per-node %tasks_per_node%    # The number of tasks to run on each node.",
+      "--ntasks-per-node %ntasks_per_node%   # The number of tasks to run on each node.",
       "--cpus-per-task   %cpus_per_task%     # The number of cpus per task (threading).",
    }
 
    -- Setup
-   self.setup = {
+   self.scratch    = "$SCRATCH"
+   self.submit_dir = "$SLURM_SUBMIT_DIR"
+   self.setup   = {
       "# Set scratch",
       "SCRATCH=/scratch/$SLURM_JOBID",
    }
@@ -33,21 +37,33 @@ function batchwriter_class:__init()
    -- Commands to run
    self.commands           = {}
    
-   -- Setup symbol table
-   self.symbtab = symbtab.create()
-   self.symbtab:add_symbol("jobname",        "default")
-   self.symbtab:add_symbol("partition",      "default_partition")
-   self.symbtab:add_symbol("timelimit",      "1:00:00")
-   self.symbtab:add_symbol("nodes",          "1")
-   self.symbtab:add_symbol("tasks_per_node", "1")
-   self.symbtab:add_symbol("cpus_per_task",  "1")
 end
 
 function batchwriter_class:add_file_to_copy(src, dest)
+   if dest == nil then
+      dest = self.scratch .. "/."
+   elseif path.is_rel_path(dest) then
+      src = path.join(self.scratch, dest)
+   end
+
+   if path.is_rel_path(src) then
+      src = path.join(self.submit_dir, src)
+   end
+   
    table.insert(self.files_to_copy, {src = src, dest = dest })
 end
 
 function batchwriter_class:add_file_to_copy_back(src, dest)
+   if dest == nil then
+      dest = self.submit_dir .. "/."
+   elseif path.is_rel_path(dest) then
+      src = path.join(self.submit_dir, dest)
+   end
+
+   if path.is_rel_path(src) then
+      src = path.join(self.scratch, src)
+   end
+
    table.insert(self.files_to_copy_back, {src = src, dest = dest})
 end
 
@@ -55,58 +71,87 @@ function batchwriter_class:add_command(cmd)
    table.insert(self.commands, cmd)
 end
 
-function batchwriter_class:write()
+function batchwriter_class:write_line(line)
+   self.file:write(self.symbtable:substitute(line))
+end
+
+function batchwriter_class:write(symbtable)
+   -- Setup 
    file = io.open(self.filepath, "w")
    
-   file:write(self.shebang .. "\n")
+   self.file      = file
+   self.symbtable = symbtable
+   
+   -- Write file
+   self:write_line(self.shebang .. "\n")
 
    -- Write header
    for k,v in pairs(self.header) do
-      file:write(self.header_cmd .. " " .. self.symbtab:substitute(v) .. "\n")
+      self:write_line(self.header_cmd .. " " .. v .. "\n")
    end
-   file:write("\n")
-   file:write("echo \"========= Job started  at `date` ==========\"\n")
-   file:write("\n")
+   self:write_line("\n")
+   self:write_line("echo \"========= Job started  at `date` ==========\"\n")
+   self:write_line("\n")
     
    -- Setup
    for k, v in pairs(self.setup) do
-      file:write(v .. "\n")
+      self:write_line(v .. "\n")
    end
-   file:write("\n")
+   self:write_line("\n")
 
    -- Copy files
-   file:write("# Copy data to nodes\n")
+   self:write_line("# Copy data to nodes\n")
    for k,v in pairs(self.files_to_copy) do
-      file:write(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
+      self:write_line(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
    end
-   file:write("\n")
+   self:write_line("\n")
 
    -- Commands
-   file:write("# Run commands\n")
+   self:write_line("# Run commands\n")
    for k,v in pairs(self.commands) do
-      file:write(v .. "\n")
+      self:write_line(v .. "\n")
    end
-   file:write("\n")
+   self:write_line("\n")
 
    -- Copy back
-   file:write("# Copy data from nodes\n")
+   self:write_line("# Copy data from nodes\n")
    for k,v in pairs(self.files_to_copy_back) do
-      file:write(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
+      self:write_line(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
    end
-   file:write("\n")
+   self:write_line("\n")
 
-   file:write("echo \"========= Job finished at `date` ==========\"\n")
+   self:write_line("echo \"========= Job finished at `date` ==========\"\n")
 
    file:close()
 end
 
+--
+-- Create module
+--
 local M = {}
 
+-- Create batchwriter
 local function create(...)
    local  bw = batchwriter_class:create(...)
    return bw
 end
 
-M.create = create
+-- Create batchwriter ftable
+local function create_lslurmes_writer(bw)
+   local ftable_def = {
+      add_command    = function(cmd) bw:add_command(cmd) end,
+      copy_file      = function(src, dest) bw:add_file_to_copy     (src, dest) end,
+      copy_file_back = function(src, dest) bw:add_file_to_copy_back(src, dest) end
+   }
+   
+   local lslurmes_writer = ftable.create_ftable()
+   lslurmes_writer:push(ftable_def)
+
+   return lslurmes_writer
+end
+
+-- Export module
+M.create                 = create
+M.create_lslurmes_writer = create_lslurmes_writer
 
 return M

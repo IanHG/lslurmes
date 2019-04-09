@@ -44,6 +44,7 @@ function ftable_class:__init(ftable, logger, add_push_pop)
             if allow_upstream_return and (ftable_return ~= nil) then
                return ftable_return
             else
+               print("here ??")
                return self.metaftable
             end
          end
@@ -82,6 +83,8 @@ function ftable_class:pop()
    else
       if self.logger then
          self.logger:message("Popping nothing.")
+      else
+         prunt("Popping nothing")
       end
    end
    self:_setup_metaftable()
