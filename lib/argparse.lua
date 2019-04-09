@@ -32,13 +32,13 @@ local function create(name, desc)
    -- Slurm stuff
    parser:group("SLURM options",
       --
-      parser:option("-t --time"              , "set wall time as HH:MM:SS"    , "8:00:00"),
-      parser:option("-q --partition"         , "set queue/partition"          , "q20"),
-      parser:option("-j --jobname"           , "set jobname"                  , "myslurmjob"),
-      parser:option("-n --nodes"             , "set number of nodes"          , 1),
-      parser:option("-np --ntasks-per-node"  , "set number of tasks per node" , 1),
-      parser:option("-c --cpus-per-task"     , "set number of cpus per task"  , 1),
-      parser:option("--mem"                  , "set memory"                   , "")
+      parser:option("-t --time"             , "set wall time as HH:MM:SS"    , "8:00:00"),
+      parser:option("-q --partition"        , "set queue/partition"          , "q20"),
+      parser:option("-j --jobname"          , "set jobname"                  , "myslurmjob"),
+      parser:option("-n --nodes"            , "set number of nodes"          , 1),
+      parser:option("-np --ntasks-per-node" , "set number of tasks per node" , 1),
+      parser:option("-c --cpus-per-task"    , "set number of cpus per task"  , 1),
+      parser:option("-m --mem"              , "set memory"                   , "")
       
       ---- mail args
       --parser:option("--mail-user", "set user mail"                            , ""),
