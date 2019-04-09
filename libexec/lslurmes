@@ -39,7 +39,9 @@ function main(pack)
       bw:write(symbtable)
       
       -- If not dry-run we submit
-      if not args.dry then
+      if args.dry then
+         execcmd.execcmd({[0] = "cat", args.submit_name},    io.stdout)
+      else
          execcmd.execcmd({[0] = "sbatch", args.submit_name}, io.stdout)
       end
    end, function(e)

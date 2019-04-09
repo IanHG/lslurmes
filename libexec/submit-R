@@ -18,12 +18,6 @@ function submit_R(parser, writer)
       .copy_file_back("*")
 end
 
---local M = {}
---
---M.submit_R = submit_R
---
---return M
-
 --[[
 # vi:syntax=lua
 --]]
