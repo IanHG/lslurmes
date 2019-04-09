@@ -48,6 +48,7 @@ end
 -- Load actual script from libexec
 local lslurmes_main = "lslurmes"
 assert(loadfile(folder_of_this .. "../libexec/" .. lslurmes_main))()
+local sname = arg[1]
 local fname = string.gsub(arg[1], "-", "_")
 local env   = {}
 local file  = dofile_into_environment(folder_of_this .. "../libexec/" ..arg[1], env)
@@ -59,7 +60,7 @@ end
 local head = table.remove(arg, #arg)
 
 -- Run main function loaded from libexec
-main(env[fname])
+main(sname, env[fname])
 
 --[[
 # vi:syntax=lua

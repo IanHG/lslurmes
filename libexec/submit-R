@@ -4,8 +4,9 @@
 function submit_R(parser, writer)
    -- Define parser
    parser
+      .description("Submit R calculation to SLURM batch system.")
       -- Add input file
-      .add_argument("input_file", "R input file.")
+      .add_argument("input_file", "R input file")
    
    -- Define writer
    writer

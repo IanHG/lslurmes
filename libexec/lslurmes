@@ -13,8 +13,8 @@ local execcmd    = assert(require "lib.execcmd")
 --- Main driver.
 --
 --
-function main(pack)
-   local parser = argparse.create()
+function main(sname, pack)
+   local parser = argparse.create(sname)
 
    exception.try(function()
       -- Arg parser
