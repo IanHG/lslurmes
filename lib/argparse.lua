@@ -12,10 +12,11 @@ local function create(description)
    -- General stuff
    parser:group("General options",
       parser:flag("--dry"  , "do not submit but just print script to terminal"),
-      parser:flag("--debug", "Print debug information (mostly for developers)."),
-      parser:flag("--quiet", "Do not print anything to stdout."),
-      parser:option("--format", "Set printout format.", "fancy"),
-      parser:flag("-v --version", "Print '" .. version.get_version() .. "' and exit."):action(function()
+      parser:flag("--debug", "print debug information (mostly for developers)"),
+      parser:flag("--quiet", "do not print anything to stdout"),
+      parser:option("--format", "set printout format", "fancy"),
+      parser:option("--submit-name", "set submit file name", "submit.sh"),
+      parser:flag("-v --version", "print '" .. version.get_version() .. "' and exit"):action(function()
          print(version.get_version())
          os.exit(0)
       end)

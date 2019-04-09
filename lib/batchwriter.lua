@@ -6,7 +6,7 @@ local path    = assert(require "lib.path")
 local batchwriter_class = class.create_class()
 
 function batchwriter_class:__init()
-   self.filepath = "submit.sh"
+   self.filepath = "%submit_name%"
    self.copy_cmd = "scp"
 
    self.shebang = "#!/bin/bash"
@@ -77,7 +77,7 @@ end
 
 function batchwriter_class:write(symbtable)
    -- Setup 
-   file = io.open(self.filepath, "w")
+   file = io.open(symbtable:substitute(self.filepath), "w")
    
    self.file      = file
    self.symbtable = symbtable
