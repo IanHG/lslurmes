@@ -5,9 +5,9 @@ local ftable  = assert(require "lib.ftable")
 
 local M = {}
 
-local function create(description)
+local function create(name, desc)
    -- Some general arguments
-   local parser = argparse("lslurmes", version.get_description().script_name)
+   local parser = argparse(name, desc)
    
    -- General stuff
    parser:group("General options",
@@ -38,11 +38,11 @@ local function create(description)
       parser:option("-n --nodes"             , "set number of nodes"          , 1),
       parser:option("-np --ntasks-per-node"  , "set number of tasks per node" , 1),
       parser:option("-c --cpus-per-task"     , "set number of cpus per task"  , 1),
-      parser:option("--mem"                  , "set memory"                   , ""),
+      parser:option("--mem"                  , "set memory"                   , "")
       
-      -- mail args
-      parser:option("--mail-user", "set user mail"                            , ""),
-      parser:option("--mail-type", "set user mail type e.g. ALL, BEGIN, etc." , "ALL")
+      ---- mail args
+      --parser:option("--mail-user", "set user mail"                            , ""),
+      --parser:option("--mail-type", "set user mail type e.g. ALL, BEGIN, etc." , "ALL")
    )
 
    return parser
@@ -53,6 +53,10 @@ local function create_lslurmes_parser(parser, symbtable)
       add_argument  = 
          function(name, desc) 
             parser:argument(name, desc) 
+         end,
+      description = 
+         function(desc)
+            parser:description(desc)
          end,
    }
 
