@@ -9,9 +9,20 @@ local M = {}
 local function create(name, desc)
    -- Some general arguments
    local parser = argparse(name, desc)
-   local argparse_version = argparse.version
+   local function argparse_version() 
+      local function version_tester(arg)
+         return argparse.version
+      end
+
+      local error, result = pcall(tester, argparse)
+      if error then
+         return argparse.version 
+      else 
+         return "0.5.0" 
+      end 
+   end
    
-   if (util.match_version(argparse_version, "0.6.0", ">=")) then
+   if (util.match_version(argparse_version(), "0.6.0", ">=")) then
       -- General stuff
       parser:group("General options",
          parser:flag("--dry"  , "do not submit but just print script to terminal"),
