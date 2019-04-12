@@ -72,12 +72,17 @@ function batchwriter_class:add_command(cmd)
 end
 
 function batchwriter_class:write_line(line)
-   self.file:write(self.symbtable:substitute(line))
+   local subline = self.symbtable:substitute(line)
+   if type(self.file.file) == "string" then
+      self.file.file = self.file.file .. subline
+   elseif type(self.file.file) == "file" then
+      self.file.file:write(subline)
+   end
 end
 
-function batchwriter_class:write(symbtable)
+function batchwriter_class:write(symbtable, file)
    -- Setup 
-   file = io.open(symbtable:substitute(self.filepath), "w")
+   --file = io.open(symbtable:substitute(self.filepath), "w")
    
    self.file      = file
    self.symbtable = symbtable
@@ -121,8 +126,6 @@ function batchwriter_class:write(symbtable)
    self:write_line("\n")
 
    self:write_line("echo \"========= Job finished at `date` ==========\"\n")
-
-   file:close()
 end
 
 --

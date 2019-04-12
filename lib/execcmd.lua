@@ -6,6 +6,7 @@ local os    = assert(require "os")
 
 -- Setup posix binds, such that the module works with different versions of luaposix
 local posix_read = nil
+local posix_write = nil
 local posix_pipe = nil
 local posix_fork = nil
 local posix_execp = nil
@@ -15,6 +16,7 @@ local posix_close = nil
 local function setup_posix_binds()
    if posix.unistd then
       posix_read  = posix.unistd.read
+      posix_write = posix.unistd.write
       posix_pipe  = posix.unistd.pipe
       posix_fork  = posix.unistd.fork
       posix_execp = posix.unistd.execp
@@ -22,6 +24,7 @@ local function setup_posix_binds()
       posix_close = posix.unistd.close
    else
       posix_read  = posix.read
+      posix_write = posix.write
       posix_pipe  = posix.pipe
       posix_fork  = posix.fork
       posix_execp = posix.execp
@@ -121,7 +124,7 @@ local function cmd_ensure_string(cmd)
    end
 end
 
---- Make sure that fd' have correct format.
+--- Make sure that fd's have correct format.
 --
 -- @param fd   A single fd or a set of fd's.
 --
@@ -202,25 +205,72 @@ local function read_from_fds(fd, log, chunksize)
    end
 end
 
+--- Write to a set of filedescriptors.
+--
+-- @param fd         The filedescriptor to read.
+-- @param log        A set of optional logfiles.
+-- @param buf        The buffer to write.
+--
+local function write_to_fds(fd, log, buf)
+   -- Check if there is a buffer to write
+   if not buf then
+      return
+   end
+   
+   -- Bootstrap fd's into correct format
+   fd = fd_boostrap(fd)
+   
+   while true do
+      for ifd = 1, #fd do
+         if fd[ifd][2] then
+            local size, msg, errnum = posix_write(fd[ifd][1], buf)
+
+            -- Check if we write the whole buffer
+            if size ~= #buf then
+               -- If we didn't we check for EAGAIN or EWOULDBLOCK
+               if errnum ~= posix.EAGAIN or errnum ~= EWOULDBLOCK then
+                  fd[ifd][2] = false
+               end
+            end
+         end
+      end
+      
+      -- Check for break of while
+      local dobreak = true
+      for ifd = 1, #fd do
+         if not fd[ifd][2] then
+            dobreak = false
+         end
+      end
+
+      if dobreak then
+         break
+      end
+   end
+end
+
 --- Execute shell command and log stdout and stderr to a set of output streams.
 --
 -- @param cmd   The command to run.
 -- @param log   An optional set of log files.
 --
 -- @return     Returns bool, msg, and status of running command (more or less like os.execute).
-local function execcmd_impl(cmd, log)
+local function execcmd_impl(cmd, log, stdin)
    -- Setup some output variables
    local wpid, msg, status
 
    -- Create io pipes 
    local stdout_rd, stdout_rw = pipe()
    local stderr_rd, stderr_rw = pipe()
+   local stdin_rd , stdin_rw  = pipe()
    
    -- Make pipes read-end non-blocking
    --local outflag = posix.fcntl(stdout_rd, posix.F_GETFL)
    --local errflag = posix.fcntl(stderr_rd, posix.F_GETFL)
    posix.fcntl(stdout_rd, posix.F_SETFL, posix.O_NONBLOCK);
    posix.fcntl(stderr_rd, posix.F_SETFL, posix.O_NONBLOCK);
+   -- Make stdin write end non-blocking
+   posix.fcntl(stdin_rw , posix.F_SETFL, posix.O_NONBLOCK);
    
    -- Fork process
    local pid, errmsg, errnum = posix_fork()
@@ -233,12 +283,15 @@ local function execcmd_impl(cmd, log)
       -- Duplicate write end of pipes to childs stdout and stderr
       posix_dup2(stdout_rw, posix_fileno(io.stdout))
       posix_dup2(stderr_rw, posix_fileno(io.stderr))
+      posix_dup2(stdin_rd , posix_fileno(io.stdin))
       
       -- Close fd's on child (the called process should not know of these, and they have already been duplicated)
       posix_close(stdout_rd)
-      posix_close(stderr_rd)
       posix_close(stdout_rw)
+      posix_close(stderr_rd)
       posix_close(stderr_rw)
+      posix_close(stdin_rd)
+      posix_close(stdin_rw)
       
       -- Do exec call
       local bool, msg = posix_execp(cmd[0], cmd)
@@ -253,6 +306,13 @@ local function execcmd_impl(cmd, log)
       -- Close write end of pipe on parent
       posix_close(stdout_rw)
       posix_close(stderr_rw)
+      posix_close(stdin_rd)
+
+      -- Write to child and close stdin write stream
+      if stdin then
+         write_to_fds(stdin_rw, log, stdin)
+      end
+      posix_close(stdin_rw)
       
       -- Read output from child
       read_from_fds({stdout_rd, stderr_rd}, log)
@@ -279,12 +339,12 @@ end
 -- @param log  An optional log.
 --
 -- @return   Returns status of cmd.
-local function execcmd(cmd, log)
+local function execcmd(cmd, log, stdin)
    -- Fix input if needed
    cmd = cmd_ensure_vector(cmd)
    
    -- Then call execcmd impl
-   return execcmd_impl(cmd, log)
+   return execcmd_impl(cmd, log, stdin)
 end
 
 --- Execute command with 'sh -exec' and log output to a set of output streams.
@@ -293,12 +353,12 @@ end
 -- @param log  An optional log.
 --
 -- @return   Returns status of cmd.
-local function execcmd_shexec(cmd, log)
+local function execcmd_shexec(cmd, log, stdin)
    -- Fix input if needed
    cmd = cmd_ensure_string(cmd)
    
    -- Then call execcmd impl
-   return execcmd_impl({[0] = "sh", "-exec", cmd}, log)
+   return execcmd_impl({[0] = "sh", "-exec", cmd}, log, stdin)
 end
 
 --- Execute command with 'bash -exec' and log output to a set of output streams.
@@ -307,12 +367,12 @@ end
 -- @param log  An optional log.
 --
 -- @return   Returns status of cmd.
-local function execcmd_bashexec(cmd, log)
+local function execcmd_bashexec(cmd, log, stdin)
    -- Fix input if needed
    cmd = cmd_ensure_string(cmd)
    
    -- Then call execcmd impl
-   return execcmd_impl({[0] = "bash", "-exec", cmd}, log)
+   return execcmd_impl({[0] = "bash", "-exec", cmd}, log, stdin)
 end
 
 -- Load module

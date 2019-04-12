@@ -34,15 +34,16 @@ function main(sname, pack)
       for k,v in pairs(args) do
          symbtable:add_symbol(k, v)
       end
-      
+
       -- Write batchfile
-      bw:write(symbtable)
+      local file = {file = ""}
+      bw:write(symbtable, file)
       
       -- If not dry-run we submit
       if args.dry then
-         execcmd.execcmd({[0] = "cat", args.submit_name},    io.stdout)
+         execcmd.execcmd({[0] = "cat"},    io.stdout, file.file)
       else
-         execcmd.execcmd({[0] = "sbatch", args.submit_name}, io.stdout)
+         execcmd.execcmd({[0] = "sbatch"}, io.stdout, file.file)
       end
    end, function(e)
       -- Print exception
