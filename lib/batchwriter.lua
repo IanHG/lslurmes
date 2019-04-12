@@ -28,6 +28,7 @@ function batchwriter_class:__init()
    self.setup   = {
       "# Set scratch",
       "SCRATCH=/scratch/$SLURM_JOBID",
+      "cd $SCRATCH",
    }
 
    -- Files to copy to scratch (table with src and dest)
