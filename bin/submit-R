@@ -3,4 +3,4 @@
 cmd=`basename $0`
 dir=`dirname $0`
 
-$dir/lslurmes-wrapper $cmd $@
+$dir/lslurmes-wrapper $cmd "$@"

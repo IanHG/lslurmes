@@ -36,6 +36,8 @@ function batchwriter_class:__init()
    
    -- Commands to run
    self.commands           = {}
+   self.precommands        = {}
+   self.postcommands       = {}
    
 end
 
@@ -67,8 +69,28 @@ function batchwriter_class:add_file_to_copy_back(src, dest)
    table.insert(self.files_to_copy_back, {src = src, dest = dest})
 end
 
-function batchwriter_class:add_command(cmd)
-   table.insert(self.commands, cmd)
+function batchwriter_class:add_command(cmd, ctype)
+   if type(cmd) == "table" then
+      local cmd_str = ""
+      local first   = true
+      for k, v in pairs(cmd) do
+         if first then
+            cmd_str = v
+            first = false
+         else
+            cmd_str = cmd_str .. " " .. v
+         end
+      end
+      cmd = cmd_str
+   end
+
+   if (not ctype) or (ctype == "") or (ctype == "cmd") then
+      table.insert(self.commands, cmd)
+   elseif ctype == "pre" then
+      table.insert(self.precommands, cmd)
+   elseif ctype == "post" then
+      table.insert(self.postcommands, cmd)
+   end
 end
 
 function batchwriter_class:write_line(line)
@@ -81,9 +103,7 @@ function batchwriter_class:write_line(line)
 end
 
 function batchwriter_class:write(symbtable, file)
-   -- Setup 
-   --file = io.open(symbtable:substitute(self.filepath), "w")
-   
+   -- Setup
    self.file      = file
    self.symbtable = symbtable
    
@@ -105,25 +125,49 @@ function batchwriter_class:write(symbtable, file)
    self:write_line("\n")
 
    -- Copy files
-   self:write_line("# Copy data to nodes\n")
-   for k,v in pairs(self.files_to_copy) do
-      self:write_line(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
+   if (#self.files_to_copy > 0) then
+      self:write_line("# Copy data to nodes\n")
+      for k,v in pairs(self.files_to_copy) do
+         self:write_line(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
+      end
+      self:write_line("\n")
    end
-   self:write_line("\n")
+
+   -- Pre commands
+   if (#self.precommands > 0) then
+      self:write_line("# Pre-commands\n")
+      for k,v in pairs(self.precommands) do
+         self:write_line(v .. "\n")
+      end
+      self:write_line("\n")
+   end      
 
    -- Commands
-   self:write_line("# Run commands\n")
-   for k,v in pairs(self.commands) do
-      self:write_line(v .. "\n")
+   if (#self.commands > 0) then
+      self:write_line("# Run commands\n")
+      for k,v in pairs(self.commands) do
+         self:write_line(v .. "\n")
+      end
+      self:write_line("\n")
    end
-   self:write_line("\n")
+
+   -- Post commands
+   if (#self.postcommands > 0) then
+      self:write_line("# Post-commands\n")
+      for k,v in pairs(self.postcommands) do
+         self:write_line(v .. "\n")
+      end
+      self:write_line("\n")
+   end
 
    -- Copy back
-   self:write_line("# Copy data from nodes\n")
-   for k,v in pairs(self.files_to_copy_back) do
-      self:write_line(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
+   if (#self.files_to_copy_back > 0) then
+      self:write_line("# Copy data from nodes\n")
+      for k,v in pairs(self.files_to_copy_back) do
+         self:write_line(self.copy_cmd .. " " .. v.src .. " " .. v.dest .. "\n")
+      end
+      self:write_line("\n")
    end
-   self:write_line("\n")
 
    self:write_line("echo \"========= Job finished at `date` ==========\"\n")
 end

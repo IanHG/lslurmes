@@ -35,6 +35,14 @@ function main(sname, pack)
          symbtable:add_symbol(k, v)
       end
 
+      for k, v in pairs(args.precmd) do
+         bw:add_command(v, "pre")
+      end
+      
+      for k, v in pairs(args.postcmd) do
+         bw:add_command(v, "post")
+      end
+
       -- Write batchfile
       local file = {file = ""}
       bw:write(symbtable, file)

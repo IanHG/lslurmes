@@ -39,11 +39,11 @@ local function create(name, desc)
       )
 
       -- Run-time
-      --parser:group("Run-time options",
-      --   parser:option("--precmd"            , "add command before invocation of program (must be surrounded by '')", default=[], action="append")
-      --   parser:option("--postcmd"           , "add command after invocation of program (must be surrounded by '')" , default=[], action="append")
-      --   parser:option("--no-local-scratch"  , "disable use of node-local scratch directory (not recommended!)", action="store_true")
-      --)
+      parser:group("Run-time options",
+         parser:option("--precmd"  , "add command before invocation of program (must be surrounded by '')"):count("*"):args("*"),
+         parser:option("--postcmd" , "add command after invocation of program (must be surrounded by '')" ):count("*"):args("*")
+         --parser:option("--no-local-scratch"  , "disable use of node-local scratch directory (not recommended!)", action="store_true")
+      )
       
       -- Slurm stuff
       parser:group("SLURM options",
@@ -74,8 +74,8 @@ local function create(name, desc)
       end)
       
       -- Run-time
-      --parser:option("--precmd"            , "add command before invocation of program (must be surrounded by '')", default=[], action="append")
-      --parser:option("--postcmd"           , "add command after invocation of program (must be surrounded by '')" , default=[], action="append")
+      parser:option("--precmd"  , "add command before invocation of program (must be surrounded by '')"):count("*"):args("*")
+      parser:option("--postcmd" , "add command after invocation of program (must be surrounded by '')" ):count("*"):args("*")
       --parser:option("--no-local-scratch"  , "disable use of node-local scratch directory (not recommended!)", action="store_true")
       
       -- Slurm stuff
