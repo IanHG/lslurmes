@@ -2,13 +2,13 @@
 local argparse = assert(require "lib.argparse")
 
 -- Load local packages
-local exception  = assert(require "lib.exception")
-local logging    = assert(require "lib.logging")
-local logger     = logging.logger
-local ansicolor  = assert(require "lib.ansicolor")
+local exception   = assert(require "lib.exception")
+local logging     = assert(require "lib.logging")
+local logger      = logging.logger
+local ansicolor   = assert(require "lib.ansicolor")
 local batchwriter = assert(require "lib.batchwriter")
-local symbtab    = assert(require "lib.symbtab")
-local execcmd    = assert(require "lib.execcmd")
+local symbtab     = assert(require "lib.symbtab")
+local execcmd     = assert(require "lib.execcmd")
 
 --- Main driver.
 --
@@ -44,6 +44,13 @@ function main(sname, pack)
          execcmd.execcmd({[0] = "cat"},    io.stdout, file.file)
       else
          execcmd.execcmd({[0] = "sbatch"}, io.stdout, file.file)
+      end
+
+      -- Dump file if requested
+      if args.dump_file then
+         local filefd = io.open(args.file_name, "w")
+         filefd:write(file.file)
+         filefd:close()
       end
    end, function(e)
       -- Print exception

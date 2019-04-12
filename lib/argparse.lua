@@ -13,8 +13,9 @@ local function create(name, desc)
       local function version_tester(arg)
          return argparse.version
       end
+      
+      local error, result = pcall(version_tester, argparse)
 
-      local error, result = pcall(tester, argparse)
       if error then
          return argparse.version 
       else 
@@ -65,7 +66,8 @@ local function create(name, desc)
       parser:flag("--debug", "print debug information (mostly for developers)")
       parser:flag("--quiet", "do not print anything to stdout")
       parser:option("--format", "set printout format", "fancy")
-      parser:option("--submit-name", "set submit file name", "submit.sh")
+      parser:flag("--dump-file", "dump submit file to disc")
+      parser:option("--file-name", "set submit file name", "submit.sh")
       parser:flag("-v --version", "print '" .. version.get_version() .. "' and exit"):action(function()
          print(version.get_version())
          os.exit(0)
