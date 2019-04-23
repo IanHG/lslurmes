@@ -17,8 +17,9 @@ function submit_desmond(parser, writer)
       -- Run R
       .add_command("source /comm/groupstacks/chemistry/bin/modules.sh")
       .add_command("ml schrodinger/2018-1")
+      .add_command("export SCHRODINGER_TMPDIR=$SCRATCH/tmp")
       .add_command("echo \"Running Schrodinger!\"")
-      .add_command("$SCHRODINGER/desmond -in %in% -c %c%")
+      .add_command("$SCHRODINGER/desmond -WAIT -in %in% -c %c%")
       .add_command("echo \"Done with Schrodinger!\"")
       -- Copy back results
       .copy_file_back("*")
