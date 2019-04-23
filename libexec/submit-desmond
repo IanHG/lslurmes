@@ -1,0 +1,29 @@
+--- Submit Desmond calculation
+--
+--
+function submit_desmond(parser, writer)
+   -- Define parser
+   parser
+      .description("Submit Schrodinger Desmond calculation to SLURM batch system.")
+      -- Add input file
+      .add_option("--in", "Input file")
+      .add_option("-c",   "Config file")
+   
+   -- Define writer
+   writer
+      -- Copy input files to node
+      .copy_file("%in%")  
+      .copy_file("%c%")  
+      -- Run R
+      .add_command("source /comm/groupstacks/chemistry/bin/modules.sh")
+      .add_command("ml schrodinger/2018-1")
+      .add_command("echo \"Running Schrodinger!\"")
+      .add_command("$SCHRODINGER/desmond -in %in% -c %c%")
+      .add_command("echo \"Done with Schrodinger!\"")
+      -- Copy back results
+      .copy_file_back("*")
+end
+
+--[[
+# vi:syntax=lua
+--]]

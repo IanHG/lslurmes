@@ -101,6 +101,10 @@ local function create_lslurmes_parser(parser, symbtable)
          function(name, desc) 
             parser:argument(name, desc) 
          end,
+      add_option =
+         function(name, desc)
+            parser:option(name, desc)
+         end,
       description = 
          function(desc)
             parser:description(desc)
