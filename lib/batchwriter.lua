@@ -7,7 +7,7 @@ local batchwriter_class = class.create_class()
 
 function batchwriter_class:__init()
    self.filepath = "%submit_name%"
-   self.copy_cmd = "scp"
+   self.copy_cmd = "scp -r"
 
    self.shebang = "#!/bin/bash"
    

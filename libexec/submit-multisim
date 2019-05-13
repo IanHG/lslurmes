@@ -1,0 +1,30 @@
+--- Submit Desmond calculation
+--
+--
+function submit_multisim(parser, writer)
+   -- Define parser
+   parser
+      .description("Submit Schrodinger Desmond calculation to SLURM batch system.")
+      -- Add input file
+      .add_option("--multisim-jobname", "Job name.")
+   
+   -- Define writer
+   writer
+      -- Copy input files to node
+      .copy_file("%multisim_jobname%.cms")  
+      .copy_file("%multisim_jobname%.msj")  
+      .copy_file("%multisim_jobname%.cfg")  
+      -- Run R
+      .add_command("source /comm/groupstacks/chemistry/bin/modules.sh")
+      .add_command("ml schrodinger/2018-1")
+      .add_command("export SCHRODINGER_TMPDIR=$SCRATCH/tmp")
+      .add_command("echo \"Running Schrodinger!\"")
+      .add_command("$SCHRODINGER/utilities/multisim -WAIT -JOBNAME %multisim_jobname% -HOST localhost -maxjob 1 -cpu 1 -m %multisim_jobname%.msj -c %multisim_jobname%.cfg -description \"Molecular Dynamics\" %multisim_jobname%.cms -mode umbrella -o %multisim_jobname%-out.cms -ATTACHED")
+      .add_command("echo \"Done with Schrodinger!\"")
+      -- Copy back results
+      .copy_file_back("*")
+end
+
+--[[
+# vi:syntax=lua
+--]]
